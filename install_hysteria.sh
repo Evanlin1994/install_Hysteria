@@ -16,6 +16,7 @@ chmod +x hysteria-linux-amd64
 mv hysteria-linux-amd64 /usr/local/bin/hysteria
 
 # 生成自签名证书
+mkdir -p /etc/hysteria
 openssl req -x509 -nodes -newkey rsa:4096 -keyout /etc/hysteria/server.key -out /etc/hysteria/server.crt -days 365 -subj "/CN=example.com"
 
 # 生成随机密码
@@ -54,9 +55,7 @@ systemctl enable hysteria
 systemctl start hysteria
 
 # 输出客户端配置
+SERVER_IP=$(curl -s ifconfig.me)
 echo "Hysteria 服务器已成功部署！"
-echo "请使用以下配置连接到服务器："
-echo "服务器地址: $(curl -s ifconfig.me)"
-echo "端口: 36712"
-echo "密码: $PASSWORD"
-echo "证书: 自签名"
+echo "请使用以下配置在 V2Ray 中添加 Hysteria 出站代理:"
+echo "{\"protocol\":\"shadowsocks\",\"settings\":{\"servers\":[{\"address\":\"$SERVER_IP\",\"port\":36712,\"method\":\"none\",\"password\":\"$PASSWORD\"}]},\"streamSettings\":{\"network\":\"tcp\",\"security\":\"none\",\"tcpSettings\":{\"header\":{\"type\":\"none\"}}}}"
