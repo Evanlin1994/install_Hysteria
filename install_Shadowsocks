@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# 检查是否以root权限运行
+if [ "$EUID" -ne 0 ]; then
+  echo "请以root权限运行此脚本"
+  exit 1
+fi
+
+# 更新系统并安装必要的包
+apt update && apt upgrade -y
+apt install -y shadowsocks-libev
+
+# 生成随机端口和密码
+PORT=$(shuf -i 10000-65535 -n 1)
+PASSWORD=$(openssl rand -base64 16)
+
+# 创建配置文件
+cat > /etc/shadowsocks-libev/config.json <<EOF
+{
+    "server":"0.0.0.0",
+    "server_port":$PORT,
+    "password":"$PASSWORD",
+    "timeout":300,
+    "method":"chacha20-ietf-poly1305",
+    "fast_open":false,
+    "workers":1
+}
+EOF
+
+# 启动 Shadowsocks 服务
+systemctl restart shadowsocks-libev
+
+# 配置防火墙
+if command -v ufw &> /dev/null; then
+    ufw allow $PORT/tcp
+    ufw allow $PORT/udp
+elif command -v firewall-cmd &> /dev/null; then
+    firewall-cmd --permanent --add-port=$PORT/tcp
+    firewall-cmd --permanent --add-port=$PORT/udp
+    firewall-cmd --reload
+fi
+
+# 获取服务器IP地址
+IP=$(curl -s https://api.ipify.org)
+
+echo "Shadowsocks 安装完成！"
+echo "服务器 IP: $IP"
+echo "端口: $PORT"
+echo "密码: $PASSWORD"
+echo "加密方法: chacha20-ietf-poly1305"
+echo ""
+echo "客户端配置:"
+echo "ss://$
